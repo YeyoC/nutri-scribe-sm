@@ -24,6 +24,15 @@ const Index = () => {
     );
   }, []);
 
+  const handleAIAnalysis = useCallback((equivalents: { id: string; equivalents: number }[]) => {
+    setGroups((prev) =>
+      prev.map((g) => {
+        const match = equivalents.find((e) => e.id === g.id);
+        return match ? { ...g, equivalents: g.equivalents + match.equivalents } : g;
+      })
+    );
+  }, []);
+
   return (
     <div className="min-h-screen bg-background pb-24">
       <Navbar />
@@ -32,7 +41,7 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left column */}
           <div className="lg:col-span-3 space-y-5">
-            <AIAnalysisSection />
+            <AIAnalysisSection onAnalysis={handleAIAnalysis} />
             <FoodGroupList groups={groups} onChange={handleGroupChange} />
           </div>
 
