@@ -13,8 +13,8 @@ const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="w-5 h-5 text-primary" />
         <h2 className="font-bold text-lg text-foreground">Analizar con IA</h2>
-        <span className="text-xs font-semibold bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-          Premium
+        <span className="text-xs font-semibold bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
+          Gratis
         </span>
       </div>
       <p className="text-sm text-muted-foreground mb-3">
@@ -32,7 +32,7 @@ const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
         onClick={() => onAnalysis?.(text)}
       >
         <Sparkles className="w-4 h-4" />
-        Inicia sesión para suscribirte
+        Enviar
       </button>
       <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
         <p>✨ Análisis ilimitado de alimentos con IA</p>
