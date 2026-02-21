@@ -1,14 +1,21 @@
-import { Calculator, PieChart, Utensils, BarChart3, LogIn } from "lucide-react";
+import { Calculator, PieChart, Utensils, BarChart3 } from "lucide-react";
 
-const navItems = [
-  { label: "Dietocálculo", icon: Calculator, active: true },
-  { label: "Distribución", icon: PieChart, active: false },
-  { label: "Dieta", icon: Utensils, active: false },
-  { label: "Calculadoras", icon: BarChart3, active: false },
-  { label: "Gráficos", icon: PieChart, active: false },
+export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos";
+
+const navItems: { label: string; icon: typeof Calculator; tab: NavTab }[] = [
+  { label: "Dietocálculo", icon: Calculator, tab: "dietocalculo" },
+  { label: "Distribución", icon: PieChart, tab: "distribucion" },
+  { label: "Dieta", icon: Utensils, tab: "dieta" },
+  { label: "Calculadoras", icon: BarChart3, tab: "calculadoras" },
+  { label: "Gráficos", icon: PieChart, tab: "graficos" },
 ];
 
-const Navbar = () => {
+interface NavbarProps {
+  activeTab: NavTab;
+  onTabChange: (tab: NavTab) => void;
+}
+
+const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
       <div className="container flex items-center justify-between h-14 px-4">
@@ -24,9 +31,10 @@ const Navbar = () => {
         <nav className="hidden md:flex items-center gap-1">
           {navItems.map((item) => (
             <button
-              key={item.label}
+              key={item.tab}
+              onClick={() => onTabChange(item.tab)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                item.active
+                activeTab === item.tab
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
@@ -37,11 +45,23 @@ const Navbar = () => {
           ))}
         </nav>
 
-        {/* Login */}
-        <button className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-          <LogIn className="w-4 h-4" />
-          <span className="hidden sm:inline">Iniciar Sesión</span>
-        </button>
+        {/* Mobile nav */}
+        <nav className="flex md:hidden items-center gap-0.5 overflow-x-auto">
+          {navItems.map((item) => (
+            <button
+              key={item.tab}
+              onClick={() => onTabChange(item.tab)}
+              className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                activeTab === item.tab
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <item.icon className="w-3.5 h-3.5" />
+              {item.label}
+            </button>
+          ))}
+        </nav>
       </div>
     </header>
   );
