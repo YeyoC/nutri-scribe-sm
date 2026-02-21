@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import Navbar from "@/components/Navbar";
+import Navbar, { type NavTab } from "@/components/Navbar";
 import AIAnalysisSection from "@/components/AIAnalysisSection";
 import FoodGroupList from "@/components/FoodGroupList";
 import EquivalentsChart from "@/components/EquivalentsChart";
@@ -7,9 +7,13 @@ import DietDistributionSection from "@/components/DietDistributionSection";
 import ResultsSection from "@/components/ResultsSection";
 import ExportSection from "@/components/ExportSection";
 import BottomBar from "@/components/BottomBar";
+import CalculadorasSection from "@/components/CalculadorasSection";
+import DietaSection from "@/components/DietaSection";
+import GraficosSection from "@/components/GraficosSection";
 import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
 
 const Index = () => {
+  const [activeTab, setActiveTab] = useState<NavTab>("dietocalculo");
   const [groups, setGroups] = useState<FoodGroup[]>(
     SMAE_GROUPS.map((g) => ({ ...g }))
   );
@@ -33,35 +37,92 @@ const Index = () => {
     );
   }, []);
 
+  const handleClear = useCallback(() => {
+    setGroups(SMAE_GROUPS.map((g) => ({ ...g })));
+  }, []);
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "dietocalculo":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-3 space-y-5">
+              <AIAnalysisSection onAnalysis={handleAIAnalysis} />
+              <FoodGroupList groups={groups} onChange={handleGroupChange} />
+            </div>
+            <div className="lg:col-span-5 space-y-5">
+              <EquivalentsChart groups={groups} totals={totals} />
+            </div>
+            <div className="lg:col-span-4 space-y-5">
+              <DietDistributionSection kcalTotal={totals.kcal} onDistributionChange={setGoals} />
+              <ResultsSection totals={totals} goals={goals} />
+              <ExportSection hasData={hasData} groups={groups} totals={totals} goals={goals} onClear={handleClear} />
+            </div>
+          </div>
+        );
+
+      case "distribucion":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-6 space-y-5">
+              <DietDistributionSection kcalTotal={totals.kcal} onDistributionChange={setGoals} />
+              <ResultsSection totals={totals} goals={goals} />
+            </div>
+            <div className="lg:col-span-6 space-y-5">
+              <EquivalentsChart groups={groups} totals={totals} />
+              <ExportSection hasData={hasData} groups={groups} totals={totals} goals={goals} onClear={handleClear} />
+            </div>
+          </div>
+        );
+
+      case "dieta":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-8">
+              <DietaSection groups={groups} />
+            </div>
+            <div className="lg:col-span-4 space-y-5">
+              <FoodGroupList groups={groups} onChange={handleGroupChange} />
+              <ExportSection hasData={hasData} groups={groups} totals={totals} goals={goals} onClear={handleClear} />
+            </div>
+          </div>
+        );
+
+      case "calculadoras":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-6">
+              <CalculadorasSection />
+            </div>
+            <div className="lg:col-span-6 space-y-5">
+              <ResultsSection totals={totals} goals={goals} />
+              <EquivalentsChart groups={groups} totals={totals} />
+            </div>
+          </div>
+        );
+
+      case "graficos":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-6">
+              <GraficosSection groups={groups} totals={totals} goals={goals} />
+            </div>
+            <div className="lg:col-span-6 space-y-5">
+              <EquivalentsChart groups={groups} totals={totals} />
+              <ResultsSection totals={totals} goals={goals} />
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Navbar />
-
-      <main className="container px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          {/* Left column */}
-          <div className="lg:col-span-3 space-y-5">
-            <AIAnalysisSection onAnalysis={handleAIAnalysis} />
-            <FoodGroupList groups={groups} onChange={handleGroupChange} />
-          </div>
-
-          {/* Center column */}
-          <div className="lg:col-span-5 space-y-5">
-            <EquivalentsChart groups={groups} totals={totals} />
-          </div>
-
-          {/* Right column */}
-          <div className="lg:col-span-4 space-y-5">
-            <DietDistributionSection
-              kcalTotal={totals.kcal}
-              onDistributionChange={setGoals}
-            />
-            <ResultsSection totals={totals} goals={goals} />
-            <ExportSection hasData={hasData} />
-          </div>
-        </div>
-      </main>
-
+      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <main className="container px-4 py-6">{renderContent()}</main>
       <BottomBar totals={totals} goals={goals} />
     </div>
   );
