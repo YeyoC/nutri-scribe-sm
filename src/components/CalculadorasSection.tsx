@@ -37,6 +37,22 @@ const CalculadorasSection = () => {
   // GET
   const get = tmb * actividadFisica;
 
+  // Fórmula de Valencia (GEB)
+  const getValenciaGEB = () => {
+    if (sexo === "hombre") {
+      if (edad >= 10 && edad < 30) return 13.37 * peso + 747;
+      if (edad >= 30 && edad <= 60) return 13.08 * peso + 693;
+      return 14.21 * peso + 429;
+    } else {
+      if (edad >= 10 && edad < 30) return 11.02 * peso + 679;
+      if (edad >= 30 && edad <= 60) return 10.92 * peso + 677;
+      return 10.98 * peso + 520;
+    }
+  };
+  const valenciaGEB = getValenciaGEB();
+  const valenciaGET = valenciaGEB * actividadFisica;
+  const valenciaEdadRango = edad < 30 ? "10-30" : edad <= 60 ? "30-60" : ">60";
+
   const imcCat = getIMCCategory(imc);
 
   const actividadOptions = [
@@ -166,6 +182,72 @@ const CalculadorasSection = () => {
           <p className="text-sm text-muted-foreground mt-1">
             {Math.round(tmb)} × {actividadFisica} = {Math.round(get)} kcal
           </p>
+        </div>
+      </div>
+
+      {/* Fórmula de Valencia */}
+      <div className="glass-card p-5">
+        <h2 className="font-bold text-lg text-foreground mb-4">Fórmula de Valencia (GEB)</h2>
+        <p className="text-xs text-muted-foreground mb-3">Gasto Energético Basal según sexo y edad</p>
+
+        {/* Table */}
+        <div className="overflow-hidden rounded-lg border border-border mb-4">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-muted/50">
+                <th className="py-2 px-3 text-left font-semibold text-muted-foreground text-xs uppercase">Sexo</th>
+                <th className="py-2 px-3 text-center font-semibold text-muted-foreground text-xs uppercase">Edad / años</th>
+                <th className="py-2 px-3 text-center font-semibold text-muted-foreground text-xs uppercase">GEB (Kcal/día)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { sexoLabel: "Hombres", rows: [
+                  { edad: "10-30", formula: "13.37 × Peso kg + 747" },
+                  { edad: "30-60", formula: "13.08 × Peso kg + 693" },
+                  { edad: ">60", formula: "14.21 × Peso kg + 429" },
+                ]},
+                { sexoLabel: "Mujeres", rows: [
+                  { edad: "10-30", formula: "11.02 × Peso kg + 679" },
+                  { edad: "30-60", formula: "10.92 × Peso kg + 677" },
+                  { edad: ">60", formula: "10.98 × Peso kg + 520" },
+                ]},
+              ].map((group) => (
+                group.rows.map((row, i) => (
+                  <tr
+                    key={`${group.sexoLabel}-${row.edad}`}
+                    className={`border-t border-border ${
+                      group.sexoLabel.toLowerCase().startsWith(sexo === "hombre" ? "hombre" : "mujer") && row.edad === valenciaEdadRango
+                        ? "bg-primary/10"
+                        : ""
+                    }`}
+                  >
+                    {i === 0 && (
+                      <td rowSpan={3} className="py-2 px-3 font-medium text-foreground border-r border-border">
+                        {group.sexoLabel}
+                      </td>
+                    )}
+                    <td className="py-2 px-3 text-center text-muted-foreground">{row.edad}</td>
+                    <td className="py-2 px-3 text-center text-foreground text-xs">{row.formula}</td>
+                  </tr>
+                ))
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Result */}
+        <div className="text-center space-y-2">
+          <div>
+            <p className="text-xs text-muted-foreground">GEB ({sexo === "hombre" ? "Hombre" : "Mujer"}, {valenciaEdadRango} años)</p>
+            <p className="text-4xl font-bold text-primary">{Math.round(valenciaGEB)} <span className="text-lg text-muted-foreground">kcal/día</span></p>
+          </div>
+          <div className="pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground">GET (GEB × Factor de Actividad)</p>
+            <p className="text-2xl font-bold text-foreground">
+              {Math.round(valenciaGEB)} × {actividadFisica} = <span className="text-primary">{Math.round(valenciaGET)}</span> <span className="text-sm text-muted-foreground">kcal/día</span>
+            </p>
+          </div>
         </div>
       </div>
     </div>
