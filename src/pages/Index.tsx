@@ -10,6 +10,7 @@ import BottomBar from "@/components/BottomBar";
 import CalculadorasSection from "@/components/CalculadorasSection";
 import DietaSection from "@/components/DietaSection";
 import GraficosSection from "@/components/GraficosSection";
+import PlatillosSection from "@/components/PlatillosSection";
 import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
 
 const Index = () => {
@@ -109,6 +110,19 @@ const Index = () => {
             </div>
             <div className="lg:col-span-6 space-y-5">
               <EquivalentsChart groups={groups} totals={totals} />
+              <ResultsSection totals={totals} goals={goals} />
+            </div>
+          </div>
+        );
+
+      case "platillos":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-8">
+              <PlatillosSection onUsarEnDieta={handleAIAnalysis} />
+            </div>
+            <div className="lg:col-span-4 space-y-5">
+              <FoodGroupList groups={groups} onChange={handleGroupChange} />
               <ResultsSection totals={totals} goals={goals} />
             </div>
           </div>
