@@ -1,11 +1,12 @@
-import { Calculator, PieChart, Utensils, BarChart3 } from "lucide-react";
+import { Calculator, PieChart, Utensils, BarChart3, ChefHat } from "lucide-react";
 
-export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos";
+export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos";
 
 const navItems: { label: string; icon: typeof Calculator; tab: NavTab }[] = [
   { label: "Dietocálculo", icon: Calculator, tab: "dietocalculo" },
   { label: "Distribución", icon: PieChart, tab: "distribucion" },
   { label: "Dieta", icon: Utensils, tab: "dieta" },
+  { label: "Platillos", icon: ChefHat, tab: "platillos" },
   { label: "Calculadoras", icon: BarChart3, tab: "calculadoras" },
   { label: "Gráficos", icon: PieChart, tab: "graficos" },
 ];
