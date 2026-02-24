@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   ChefHat, Plus, Sparkles, Loader2, Trash2, Eye, UtensilsCrossed,
-  ArrowLeft, Save, Search,
+  ArrowLeft, Save, Search, Lock,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,7 +33,16 @@ interface PlatillosSectionProps {
   onUsarEnDieta: (equivalents: { id: string; equivalents: number }[]) => void;
 }
 
+type PlanType = "gratis" | "estudiante" | "profesional";
+
+const PLAN_LIMITS: Record<PlanType, number> = {
+  gratis: 3,
+  estudiante: 30,
+  profesional: Infinity,
+};
+
 const STORAGE_KEY = "supernutrein_platillos";
+const PLAN_KEY = "supernutrein_plan";
 
 function loadPlatillos(): Platillo[] {
   try {
@@ -45,12 +54,16 @@ function loadPlatillos(): Platillo[] {
 function savePlatillos(p: Platillo[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 }
+function loadPlan(): PlanType {
+  return (localStorage.getItem(PLAN_KEY) as PlanType) || "gratis";
+}
 
 type View = "list" | "create" | "detail";
 
 const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
   const [view, setView] = useState<View>("list");
   const [platillos, setPlatillos] = useState<Platillo[]>(loadPlatillos);
+  const [plan] = useState<PlanType>(loadPlan);
   const [search, setSearch] = useState("");
 
   // Create form state
@@ -91,6 +104,10 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
   const handleSave = useCallback(() => {
     if (!nombre.trim()) {
       toast.error("Escribe el nombre del platillo");
+      return;
+    }
+    if (!editingId && platillos.length >= PLAN_LIMITS[plan]) {
+      toast.error("Alcanzaste el límite de platillos en tu plan actual.");
       return;
     }
     if (!analysisResult || analysisResult.length === 0) {
@@ -186,6 +203,9 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     p.nombre.toLowerCase().includes(search.toLowerCase())
   );
 
+  const limit = PLAN_LIMITS[plan];
+  const atLimit = platillos.length >= limit;
+
   // ── LIST VIEW ──
   if (view === "list") {
     return (
@@ -196,20 +216,43 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
               <ChefHat className="w-5 h-5 text-primary" />
               <h2 className="font-bold text-lg text-foreground">Mis Platillos</h2>
               <span className="text-xs font-semibold bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
-                {platillos.length}
+                {platillos.length}{limit < Infinity ? `/${limit}` : ""}
               </span>
             </div>
-            <button
-              onClick={() => {
-                resetForm();
-                setView("create");
-              }}
-              className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
-            >
-              <Plus className="w-4 h-4" />
-              Nuevo platillo
-            </button>
+            {atLimit ? (
+              <span className="flex items-center gap-1.5 rounded-lg bg-muted text-muted-foreground font-semibold px-4 py-2 text-sm cursor-not-allowed">
+                <Lock className="w-4 h-4" />
+                Límite alcanzado
+              </span>
+            ) : (
+              <button
+                onClick={() => {
+                  resetForm();
+                  setView("create");
+                }}
+                className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+              >
+                <Plus className="w-4 h-4" />
+                Nuevo platillo
+              </button>
+            )}
           </div>
+
+          {/* Limit banner */}
+          {atLimit && (
+            <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 mb-4">
+              <Lock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  🔒 Alcanzaste el límite de {limit} platillo{limit > 1 ? "s" : ""} en plan{" "}
+                  <span className="capitalize">{plan}</span>.
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Actualiza tu plan para guardar más platillos. Puedes seguir viendo y usando los que ya tienes.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Search */}
           <div className="relative mb-4">
