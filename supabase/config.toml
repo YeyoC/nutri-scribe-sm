@@ -1,1 +1,7 @@
 project_id = "lpcxmsbwulheeririyyy"
+
+[functions.analyze-dish]
+verify_jwt = false
+
+[functions.analyze-food]
+verify_jwt = false
