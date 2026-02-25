@@ -11,6 +11,7 @@ import CalculadorasSection from "@/components/CalculadorasSection";
 import DietaSection from "@/components/DietaSection";
 import GraficosSection from "@/components/GraficosSection";
 import PlatillosSection from "@/components/PlatillosSection";
+import TwoFactorSetup from "@/components/TwoFactorSetup";
 import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
 
 const Index = () => {
@@ -125,6 +126,13 @@ const Index = () => {
               <FoodGroupList groups={groups} onChange={handleGroupChange} />
               <ResultsSection totals={totals} goals={goals} />
             </div>
+          </div>
+        );
+
+      case "configuracion":
+        return (
+          <div className="max-w-lg mx-auto space-y-5">
+            <TwoFactorSetup />
           </div>
         );
 
