@@ -1,14 +1,15 @@
-import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings } from "lucide-react";
+import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos" | "configuracion";
 
-const navItems: { label: string; icon: typeof Calculator; tab: NavTab }[] = [
+const navItems: { label: string; icon: typeof Calculator; tab: NavTab; requiresAuth?: boolean }[] = [
   { label: "Dietocálculo", icon: Calculator, tab: "dietocalculo" },
   { label: "Distribución", icon: PieChart, tab: "distribucion" },
   { label: "Dieta", icon: Utensils, tab: "dieta" },
-  { label: "Platillos", icon: ChefHat, tab: "platillos" },
+  { label: "Platillos", icon: ChefHat, tab: "platillos", requiresAuth: true },
   { label: "Calculadoras", icon: BarChart3, tab: "calculadoras" },
   { label: "Gráficos", icon: PieChart, tab: "graficos" },
 ];
@@ -22,6 +23,8 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
   const { user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  let navigate: ReturnType<typeof useNavigate> | null = null;
+  try { navigate = useNavigate(); } catch { /* outside router */ }
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -34,6 +37,14 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
   }, []);
 
   const displayName = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Usuario";
+
+  const handleNavClick = (tab: NavTab, requiresAuth?: boolean) => {
+    if (requiresAuth && !user) {
+      navigate?.("/auth");
+      return;
+    }
+    onTabChange(tab);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border shadow-sm">
@@ -51,7 +62,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
           {navItems.map((item) => (
             <button
               key={item.tab}
-              onClick={() => onTabChange(item.tab)}
+              onClick={() => handleNavClick(item.tab, item.requiresAuth)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === item.tab
                   ? "bg-primary text-primary-foreground"
@@ -64,40 +75,50 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
           ))}
         </nav>
 
-        {/* User menu */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors"
-          >
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <User className="w-4 h-4 text-primary" />
-            </div>
-            <span className="text-sm font-medium text-foreground hidden sm:inline max-w-[120px] truncate">
-              {displayName}
-            </span>
-          </button>
-
-          {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-card shadow-lg py-1 z-50">
-              <div className="px-3 py-2 border-b border-border">
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+        {/* User menu or Login button */}
+        {user ? (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors"
+            >
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                <User className="w-4 h-4 text-primary" />
               </div>
-              <button
-                onClick={() => { onTabChange("configuracion"); setMenuOpen(false); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
-              >
-                <Settings className="w-4 h-4" /> Configuración
-              </button>
-              <button
-                onClick={() => { signOut(); setMenuOpen(false); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                <LogOut className="w-4 h-4" /> Cerrar sesión
-              </button>
-            </div>
-          )}
-        </div>
+              <span className="text-sm font-medium text-foreground hidden sm:inline max-w-[120px] truncate">
+                {displayName}
+              </span>
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-card shadow-lg py-1 z-50">
+                <div className="px-3 py-2 border-b border-border">
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </div>
+                <button
+                  onClick={() => { onTabChange("configuracion"); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                >
+                  <Settings className="w-4 h-4" /> Configuración
+                </button>
+                <button
+                  onClick={() => { signOut(); setMenuOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" /> Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => navigate?.("/auth")}
+            className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+          >
+            <LogIn className="w-4 h-4" />
+            Iniciar sesión
+          </button>
+        )}
       </div>
 
       {/* Mobile nav */}
@@ -105,7 +126,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
         {navItems.map((item) => (
           <button
             key={item.tab}
-            onClick={() => onTabChange(item.tab)}
+            onClick={() => handleNavClick(item.tab, item.requiresAuth)}
             className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               activeTab === item.tab
                 ? "bg-primary text-primary-foreground"
