@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import Navbar, { type NavTab } from "@/components/Navbar";
 import AIAnalysisSection from "@/components/AIAnalysisSection";
 import FoodGroupList from "@/components/FoodGroupList";
@@ -15,6 +17,8 @@ import TwoFactorSetup from "@/components/TwoFactorSetup";
 import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<NavTab>("dietocalculo");
   const [groups, setGroups] = useState<FoodGroup[]>(
     SMAE_GROUPS.map((g) => ({ ...g }))
@@ -42,6 +46,15 @@ const Index = () => {
   const handleClear = useCallback(() => {
     setGroups(SMAE_GROUPS.map((g) => ({ ...g })));
   }, []);
+
+  const handleTabChange = useCallback((tab: NavTab) => {
+    const authTabs: NavTab[] = ["platillos", "configuracion"];
+    if (authTabs.includes(tab) && !user) {
+      navigate("/auth");
+      return;
+    }
+    setActiveTab(tab);
+  }, [user, navigate]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -143,7 +156,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <Navbar activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navbar activeTab={activeTab} onTabChange={handleTabChange} />
       <main className="container px-4 py-6">{renderContent()}</main>
       <BottomBar totals={totals} goals={goals} />
     </div>

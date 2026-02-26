@@ -4,6 +4,8 @@ import {
   ArrowLeft, Save, Search, Lock, Share2, Link2, Copy,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePlan, PLAN_LIMITS } from "@/hooks/usePlan";
 import { toast } from "sonner";
 
 interface SmaeDesglose {
@@ -45,12 +47,6 @@ interface PlatillosSectionProps {
 
 type PlanType = "gratis" | "estudiante" | "profesional";
 
-const PLAN_LIMITS: Record<PlanType, number> = {
-  gratis: 3,
-  estudiante: 30,
-  profesional: Infinity,
-};
-
 const SMAE_GROUP_NAMES: Record<string, string> = {
   verduras: "Verduras",
   frutas: "Frutas",
@@ -72,7 +68,6 @@ const SMAE_GROUP_NAMES: Record<string, string> = {
 };
 
 const STORAGE_KEY = "supernutrein_platillos";
-const PLAN_KEY = "supernutrein_plan";
 
 function loadPlatillos(): Platillo[] {
   try {
@@ -84,16 +79,14 @@ function loadPlatillos(): Platillo[] {
 function savePlatillosLocal(p: Platillo[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 }
-function loadPlan(): PlanType {
-  return (localStorage.getItem(PLAN_KEY) as PlanType) || "gratis";
-}
 
 type View = "list" | "create" | "detail";
 
 const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
+  const { user } = useAuth();
+  const { plan, canUseAi, trackAiUsage, limits } = usePlan();
   const [view, setView] = useState<View>("list");
   const [platillos, setPlatillos] = useState<Platillo[]>(loadPlatillos);
-  const [plan] = useState<PlanType>(loadPlan);
   const [search, setSearch] = useState("");
 
   // Create form state
@@ -117,8 +110,17 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
       toast.error("Escribe los ingredientes del platillo");
       return;
     }
+    if (!canUseAi) {
+      toast.error("Alcanzaste el límite de análisis IA de tu plan. Actualiza para más.");
+      return;
+    }
     setLoading(true);
     try {
+      const tracked = await trackAiUsage();
+      if (!tracked) {
+        toast.error("Límite de análisis IA alcanzado este mes.");
+        return;
+      }
       const { data, error } = await supabase.functions.invoke("analyze-dish", {
         body: { text: descripcion.trim() },
       });
@@ -135,14 +137,14 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     } finally {
       setLoading(false);
     }
-  }, [descripcion]);
+  }, [descripcion, canUseAi, trackAiUsage]);
 
   const handleSave = useCallback(async () => {
     if (!nombre.trim()) {
       toast.error("Escribe el nombre del platillo");
       return;
     }
-    if (!editingId && platillos.length >= PLAN_LIMITS[plan]) {
+    if (!editingId && platillos.length >= limits.platillos) {
       toast.error("Alcanzaste el límite de platillos en tu plan actual.");
       return;
     }
@@ -307,8 +309,8 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     p.nombre.toLowerCase().includes(search.toLowerCase())
   );
 
-  const limit = PLAN_LIMITS[plan];
-  const atLimit = platillos.length >= limit;
+  const platilloLimit = limits.platillos;
+  const atLimit = platillos.length >= platilloLimit;
 
   // ── LIST VIEW ──
   if (view === "list") {
@@ -320,7 +322,7 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
               <ChefHat className="w-5 h-5 text-primary" />
               <h2 className="font-bold text-lg text-foreground">Mis Platillos</h2>
               <span className="text-xs font-semibold bg-accent text-accent-foreground px-2 py-0.5 rounded-full">
-                {platillos.length}{limit < Infinity ? `/${limit}` : ""}
+                {platillos.length}{platilloLimit < Infinity ? `/${platilloLimit}` : ""}
               </span>
             </div>
             {atLimit ? (
@@ -345,7 +347,7 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
               <Lock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  🔒 Alcanzaste el límite de {limit} platillo{limit > 1 ? "s" : ""} en plan{" "}
+                  🔒 Alcanzaste el límite de {platilloLimit} platillo{platilloLimit > 1 ? "s" : ""} en plan{" "}
                   <span className="capitalize">{plan}</span>.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
