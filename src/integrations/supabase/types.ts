@@ -168,6 +168,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_admin_users_data: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          display_name: string
+          email: string
+          is_banned: boolean
+          last_sign_in_at: string
+          plan: string
+          user_id: string
+        }[]
+      }
       get_ai_usage_this_month: { Args: { p_user_id: string }; Returns: number }
       has_role: {
         Args: {
