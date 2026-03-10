@@ -6,13 +6,14 @@ import { useNavigate } from "react-router-dom";
 
 export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos" | "configuracion" | "admin";
 
-const navItems: { label: string; icon: typeof Calculator; tab: NavTab; requiresAuth?: boolean }[] = [
+const navItems: { label: string; icon: typeof Calculator; tab: NavTab; requiresAuth?: boolean; adminOnly?: boolean }[] = [
   { label: "Dietocálculo", icon: Calculator, tab: "dietocalculo" },
   { label: "Distribución", icon: PieChart, tab: "distribucion" },
   { label: "Dieta", icon: Utensils, tab: "dieta" },
   { label: "Platillos", icon: ChefHat, tab: "platillos", requiresAuth: true },
   { label: "Calculadoras", icon: BarChart3, tab: "calculadoras" },
   { label: "Gráficos", icon: PieChart, tab: "graficos" },
+  { label: "Admin", icon: Shield, tab: "admin", requiresAuth: true, adminOnly: true },
 ];
 
 interface NavbarProps {
