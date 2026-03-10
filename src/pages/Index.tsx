@@ -20,6 +20,7 @@ import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
 
 const Index = () => {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<NavTab>("dietocalculo");
   const [groups, setGroups] = useState<FoodGroup[]>(
