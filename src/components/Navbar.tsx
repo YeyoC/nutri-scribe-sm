@@ -126,7 +126,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
 
       {/* Mobile nav */}
       <nav className="flex md:hidden items-center gap-0.5 overflow-x-auto px-4 pb-2">
-        {navItems.map((item) => (
+        {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
           <button
             key={item.tab}
             onClick={() => handleNavClick(item.tab, item.requiresAuth)}
