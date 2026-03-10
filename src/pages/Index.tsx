@@ -51,7 +51,7 @@ const Index = () => {
   }, []);
 
   const handleTabChange = useCallback((tab: NavTab) => {
-    const authTabs: NavTab[] = ["platillos", "configuracion"];
+    const authTabs: NavTab[] = ["platillos", "configuracion", "admin"];
     if (authTabs.includes(tab) && !user) {
       navigate("/auth");
       return;
