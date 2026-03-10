@@ -1,9 +1,10 @@
-import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn } from "lucide-react";
+import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos" | "configuracion";
+export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos" | "configuracion" | "admin";
 
 const navItems: { label: string; icon: typeof Calculator; tab: NavTab; requiresAuth?: boolean }[] = [
   { label: "Dietocálculo", icon: Calculator, tab: "dietocalculo" },
