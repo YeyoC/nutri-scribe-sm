@@ -22,6 +22,7 @@ interface NavbarProps {
 
 const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   let navigate: ReturnType<typeof useNavigate> | null = null;
