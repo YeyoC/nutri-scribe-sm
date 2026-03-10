@@ -61,7 +61,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
 
         {/* Nav items */}
         <nav className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => (
+          {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
             <button
               key={item.tab}
               onClick={() => handleNavClick(item.tab, item.requiresAuth)}
