@@ -14,10 +14,13 @@ import DietaSection from "@/components/DietaSection";
 import GraficosSection from "@/components/GraficosSection";
 import PlatillosSection from "@/components/PlatillosSection";
 import TwoFactorSetup from "@/components/TwoFactorSetup";
+import AdminPanel from "@/components/AdminPanel";
+import { useAdmin } from "@/hooks/useAdmin";
 import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
 
 const Index = () => {
   const { user } = useAuth();
+  const { isAdmin } = useAdmin();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<NavTab>("dietocalculo");
   const [groups, setGroups] = useState<FoodGroup[]>(
@@ -48,7 +51,7 @@ const Index = () => {
   }, []);
 
   const handleTabChange = useCallback((tab: NavTab) => {
-    const authTabs: NavTab[] = ["platillos", "configuracion"];
+    const authTabs: NavTab[] = ["platillos", "configuracion", "admin"];
     if (authTabs.includes(tab) && !user) {
       navigate("/auth");
       return;
@@ -148,6 +151,13 @@ const Index = () => {
             <TwoFactorSetup />
           </div>
         );
+
+      case "admin":
+        return isAdmin ? (
+          <div className="max-w-4xl mx-auto">
+            <AdminPanel />
+          </div>
+        ) : null;
 
       default:
         return null;

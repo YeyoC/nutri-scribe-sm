@@ -1,17 +1,19 @@
-import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn } from "lucide-react";
+import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn, Shield } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAdmin } from "@/hooks/useAdmin";
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos" | "configuracion";
+export type NavTab = "dietocalculo" | "distribucion" | "dieta" | "calculadoras" | "graficos" | "platillos" | "configuracion" | "admin";
 
-const navItems: { label: string; icon: typeof Calculator; tab: NavTab; requiresAuth?: boolean }[] = [
+const navItems: { label: string; icon: typeof Calculator; tab: NavTab; requiresAuth?: boolean; adminOnly?: boolean }[] = [
   { label: "Dietocálculo", icon: Calculator, tab: "dietocalculo" },
   { label: "Distribución", icon: PieChart, tab: "distribucion" },
   { label: "Dieta", icon: Utensils, tab: "dieta" },
   { label: "Platillos", icon: ChefHat, tab: "platillos", requiresAuth: true },
   { label: "Calculadoras", icon: BarChart3, tab: "calculadoras" },
   { label: "Gráficos", icon: PieChart, tab: "graficos" },
+  { label: "Admin", icon: Shield, tab: "admin", requiresAuth: true, adminOnly: true },
 ];
 
 interface NavbarProps {
@@ -21,6 +23,7 @@ interface NavbarProps {
 
 const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
   const { user, signOut } = useAuth();
+  const { isAdmin } = useAdmin();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   let navigate: ReturnType<typeof useNavigate> | null = null;
@@ -59,7 +62,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
 
         {/* Nav items */}
         <nav className="hidden md:flex items-center gap-1">
-          {navItems.map((item) => (
+          {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
             <button
               key={item.tab}
               onClick={() => handleNavClick(item.tab, item.requiresAuth)}
@@ -123,7 +126,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
 
       {/* Mobile nav */}
       <nav className="flex md:hidden items-center gap-0.5 overflow-x-auto px-4 pb-2">
-        {navItems.map((item) => (
+        {navItems.filter(item => !item.adminOnly || isAdmin).map((item) => (
           <button
             key={item.tab}
             onClick={() => handleNavClick(item.tab, item.requiresAuth)}
