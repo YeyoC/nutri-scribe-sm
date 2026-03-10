@@ -152,6 +152,13 @@ const Index = () => {
           </div>
         );
 
+      case "admin":
+        return isAdmin ? (
+          <div className="max-w-4xl mx-auto">
+            <AdminPanel />
+          </div>
+        ) : null;
+
       default:
         return null;
     }
