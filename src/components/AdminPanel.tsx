@@ -163,7 +163,7 @@ const AdminPanel = () => {
             <Input
               placeholder="Buscar por nombre o correo..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(sanitizeText(e.target.value).slice(0, 200))}
               className="pl-9"
             />
           </div>
