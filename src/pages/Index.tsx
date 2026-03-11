@@ -28,6 +28,7 @@ const Index = () => {
     SMAE_GROUPS.map((g) => ({ ...g }))
   );
   const [goals, setGoals] = useState({ kcal: 2000, protein: 75, lipids: 55.6, hco: 300 });
+  const [smaeEdition, setSmaeEdition] = useState<SmaeEdition>("smae4");
 
   const totals = calculateTotals(groups);
   const hasData = groups.some((g) => g.equivalents > 0);
