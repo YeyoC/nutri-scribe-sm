@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Crown, Mail, Calendar, Clock, UtensilsCrossed, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { sanitizeText } from "@/lib/security";
 
 interface UserRow {
   user_id: string;
@@ -162,7 +163,7 @@ const AdminPanel = () => {
             <Input
               placeholder="Buscar por nombre o correo..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(sanitizeText(e.target.value).slice(0, 200))}
               className="pl-9"
             />
           </div>

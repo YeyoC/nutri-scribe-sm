@@ -5,12 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { usePlan } from "@/hooks/usePlan";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { aiTextSchema, checkRateLimit } from "@/lib/security";
+import type { SmaeEdition } from "@/components/SmaeEditionSelector";
 
 interface AIAnalysisSectionProps {
   onAnalysis?: (equivalents: { id: string; equivalents: number }[]) => void;
+  smaeEdition?: SmaeEdition;
 }
 
-const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
+const AIAnalysisSection = ({ onAnalysis, smaeEdition = "smae4" }: AIAnalysisSectionProps) => {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -26,12 +29,20 @@ const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
     }
 
     if (!canUseAi) {
-      toast.error(`Alcanzaste el límite de análisis IA de tu plan (${plan}). Actualiza tu plan para más.`);
+      toast.error(`Alcanzaste el límite de análisis IA de tu plan (${plan}).`);
       return;
     }
 
-    if (!text.trim()) {
-      toast.error("Escribe lo que comes para analizar");
+    // Validate & sanitize input
+    const parsed = aiTextSchema.safeParse(text);
+    if (!parsed.success) {
+      toast.error(parsed.error.errors[0]?.message || "Entrada no válida");
+      return;
+    }
+
+    // Client-side rate limit: max 5 requests per 60s
+    if (!checkRateLimit(`ai_${user.id}`, 5, 60_000)) {
+      toast.error("Demasiadas solicitudes. Espera un momento.");
       return;
     }
 
@@ -43,8 +54,10 @@ const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
         return;
       }
 
+      const editionLabel = smaeEdition === "smae5" ? "SMAE 5ª edición (2014)" : "SMAE 4ª edición";
+
       const { data, error } = await supabase.functions.invoke("analyze-food", {
-        body: { text: text.trim() },
+        body: { text: parsed.data, smaeEdition: editionLabel },
       });
 
       if (error) throw error;
@@ -97,11 +110,15 @@ const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
           <textarea
             className="w-full rounded-lg border border-input bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             rows={3}
+            maxLength={1000}
             placeholder="Ejemplo: 550g de pechuga de pollo, 4 huevos, 500ml de leche entera..."
             value={text}
             onChange={(e) => setText(e.target.value)}
             disabled={loading || !canUseAi}
           />
+          <div className="flex justify-end">
+            <span className="text-xs text-muted-foreground">{text.length}/1000</span>
+          </div>
           {!canUseAi && (
             <div className="flex items-center gap-2 mt-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
               <Lock className="w-4 h-4 text-primary shrink-0" />
@@ -115,11 +132,7 @@ const AIAnalysisSection = ({ onAnalysis }: AIAnalysisSectionProps) => {
             onClick={handleSubmit}
             disabled={loading || !canUseAi}
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {loading ? "Analizando..." : "Enviar"}
           </button>
           <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">

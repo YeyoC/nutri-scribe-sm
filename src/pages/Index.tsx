@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar, { type NavTab } from "@/components/Navbar";
 import AIAnalysisSection from "@/components/AIAnalysisSection";
+import SmaeEditionSelector, { type SmaeEdition } from "@/components/SmaeEditionSelector";
 import FoodGroupList from "@/components/FoodGroupList";
 import EquivalentsChart from "@/components/EquivalentsChart";
 import DietDistributionSection from "@/components/DietDistributionSection";
@@ -27,6 +28,7 @@ const Index = () => {
     SMAE_GROUPS.map((g) => ({ ...g }))
   );
   const [goals, setGoals] = useState({ kcal: 2000, protein: 75, lipids: 55.6, hco: 300 });
+  const [smaeEdition, setSmaeEdition] = useState<SmaeEdition>("smae4");
 
   const totals = calculateTotals(groups);
   const hasData = groups.some((g) => g.equivalents > 0);
@@ -65,7 +67,8 @@ const Index = () => {
         return (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-3 space-y-5">
-              <AIAnalysisSection onAnalysis={handleAIAnalysis} />
+              <AIAnalysisSection onAnalysis={handleAIAnalysis} smaeEdition={smaeEdition} />
+              <SmaeEditionSelector value={smaeEdition} onChange={setSmaeEdition} />
               <FoodGroupList groups={groups} onChange={handleGroupChange} />
             </div>
             <div className="lg:col-span-5 space-y-5">
