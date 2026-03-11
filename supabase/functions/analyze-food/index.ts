@@ -68,9 +68,12 @@ serve(async (req) => {
   }
 
   try {
-    const { text } = await req.json();
-    if (!text || typeof text !== "string") {
-      return new Response(JSON.stringify({ error: "Se requiere texto" }), {
+    const body = await req.json();
+    const text = typeof body?.text === "string" ? body.text.trim().slice(0, 1000) : "";
+    const smaeEdition = typeof body?.smaeEdition === "string" ? body.smaeEdition.slice(0, 50) : "SMAE 4ª edición";
+
+    if (!text || text.length < 3) {
+      return new Response(JSON.stringify({ error: "Se requiere texto (mín 3 caracteres)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -78,6 +81,8 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const editionContext = `\n\nIMPORTANTE: Usa los valores de referencia de la ${smaeEdition} del Sistema Mexicano de Alimentos Equivalentes.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
