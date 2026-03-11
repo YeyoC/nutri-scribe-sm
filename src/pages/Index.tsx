@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar, { type NavTab } from "@/components/Navbar";
 import AIAnalysisSection from "@/components/AIAnalysisSection";
+import SmaeEditionSelector, { type SmaeEdition } from "@/components/SmaeEditionSelector";
 import FoodGroupList from "@/components/FoodGroupList";
 import EquivalentsChart from "@/components/EquivalentsChart";
 import DietDistributionSection from "@/components/DietDistributionSection";
