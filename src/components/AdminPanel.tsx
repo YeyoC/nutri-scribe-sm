@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Crown, Mail, Calendar, Clock, UtensilsCrossed, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { sanitizeText } from "@/lib/security";
 
 interface UserRow {
   user_id: string;
