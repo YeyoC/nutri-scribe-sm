@@ -152,6 +152,7 @@ const Index = () => {
       case "configuracion":
         return (
           <div className="max-w-lg mx-auto space-y-5">
+            <ProfileSettings />
             <TwoFactorSetup />
           </div>
         );
