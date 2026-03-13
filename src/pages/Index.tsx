@@ -154,6 +154,7 @@ const Index = () => {
         return (
           <div className="max-w-lg mx-auto space-y-5">
             <ProfileSettings />
+            <SubscriptionSection />
             <TwoFactorSetup />
           </div>
         );
