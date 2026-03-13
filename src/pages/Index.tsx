@@ -16,6 +16,7 @@ import GraficosSection from "@/components/GraficosSection";
 import PlatillosSection from "@/components/PlatillosSection";
 import TwoFactorSetup from "@/components/TwoFactorSetup";
 import ProfileSettings from "@/components/ProfileSettings";
+import SubscriptionSection from "@/components/SubscriptionSection";
 import AdminPanel from "@/components/AdminPanel";
 import { useAdmin } from "@/hooks/useAdmin";
 import { SMAE_GROUPS, calculateTotals, type FoodGroup } from "@/data/smaeData";
@@ -153,6 +154,7 @@ const Index = () => {
         return (
           <div className="max-w-lg mx-auto space-y-5">
             <ProfileSettings />
+            <SubscriptionSection />
             <TwoFactorSetup />
           </div>
         );
