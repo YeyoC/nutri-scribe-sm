@@ -18,13 +18,12 @@ const AIAnalysisSection = ({ onAnalysis, smaeEdition = "smae4" }: AIAnalysisSect
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
   const { canUseAi, aiRemaining, trackAiUsage, plan } = usePlan();
-  let navigate: ReturnType<typeof useNavigate> | null = null;
-  try { navigate = useNavigate(); } catch { /* */ }
+  const navigate = useNavigate();
 
   const handleSubmit = async () => {
     if (!user) {
       toast.error("Inicia sesión para usar el análisis con IA");
-      navigate?.("/auth");
+      navigate("/auth");
       return;
     }
 
@@ -96,7 +95,7 @@ const AIAnalysisSection = ({ onAnalysis, smaeEdition = "smae4" }: AIAnalysisSect
             Inicia sesión para usar el análisis con IA
           </p>
           <button
-            onClick={() => navigate?.("/auth")}
+            onClick={() => navigate("/auth")}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
           >
             <LogIn className="w-4 h-4" /> Iniciar sesión

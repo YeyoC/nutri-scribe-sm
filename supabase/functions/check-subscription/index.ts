@@ -59,9 +59,26 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // If session_id provided, verify and grant access
+    // If session_id provided, verify and grant access (prevent replay attacks)
     if (sessionId) {
       logStep("Verifying checkout session", { sessionId });
+
+      // Check if this session was already processed
+      const { data: existingPlan } = await supabaseAdmin
+        .from("user_plans")
+        .select("stripe_session_id, plan")
+        .eq("user_id", user.id)
+        .single();
+
+      if (existingPlan?.stripe_session_id === sessionId) {
+        logStep("Session already processed, returning current plan");
+        return new Response(JSON.stringify({
+          subscribed: true,
+          plan: existingPlan.plan,
+          already_processed: true,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       const session = await stripe.checkout.sessions.retrieve(sessionId);
 
       if (session.payment_status === "paid") {

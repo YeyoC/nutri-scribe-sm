@@ -27,18 +27,24 @@ export function usePlan() {
     const fetchPlan = async () => {
       try {
         const [planRes, usageRes] = await Promise.all([
-          supabase.from("user_plans").select("plan").eq("user_id", user.id).single(),
+          supabase.from("user_plans").select("plan, expires_at").eq("user_id", user.id).single(),
           supabase.rpc("get_ai_usage_this_month", { p_user_id: user.id }),
         ]);
 
         if (planRes.data?.plan) {
-          setPlan(planRes.data.plan as PlanType);
+          const { plan: dbPlan, expires_at } = planRes.data;
+          // Si tiene expires_at y ya expiró, degradar a gratis
+          if (expires_at && new Date(expires_at) < new Date()) {
+            setPlan("gratis");
+          } else {
+            setPlan(dbPlan as PlanType);
+          }
         }
         if (typeof usageRes.data === "number") {
           setAiUsage(usageRes.data);
         }
       } catch {
-        // fallback
+        // fallback a gratis
       } finally {
         setLoading(false);
       }
@@ -51,15 +57,23 @@ export function usePlan() {
     if (!user) return false;
     const limit = PLAN_LIMITS[plan].ai_monthly;
     if (aiUsage >= limit) return false;
-    
-    await supabase.from("ai_usage_log").insert({ user_id: user.id, action_type: "analyze" });
+
+    const { error } = await supabase
+      .from("ai_usage_log")
+      .insert({ user_id: user.id, action_type: "analyze" });
+
+    if (error) {
+      console.error("Error tracking AI usage:", error);
+      return false;
+    }
+
     setAiUsage((prev) => prev + 1);
     return true;
   };
 
   const canUseAi = user ? aiUsage < PLAN_LIMITS[plan].ai_monthly : false;
-  const aiRemaining = PLAN_LIMITS[plan].ai_monthly === Infinity 
-    ? Infinity 
+  const aiRemaining = PLAN_LIMITS[plan].ai_monthly === Infinity
+    ? Infinity
     : Math.max(0, PLAN_LIMITS[plan].ai_monthly - aiUsage);
 
   return { plan, aiUsage, aiRemaining, canUseAi, trackAiUsage, loading, limits: PLAN_LIMITS[plan] };

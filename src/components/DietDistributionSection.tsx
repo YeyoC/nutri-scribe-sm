@@ -12,7 +12,7 @@ const DietDistributionSection = ({ kcalTotal, onDistributionChange }: DietDistri
   const [hcoP, setHcoP] = useState(60);
   const [lipP, setLipP] = useState(25);
   const [proP, setProP] = useState(15);
-  const [isAuto, setIsAuto] = useState(true);
+  const [isAuto, setIsAuto] = useState(false);
 
   const dist = calculateDistribution({
     kcalTotal: dietKcal,
@@ -20,6 +20,13 @@ const DietDistributionSection = ({ kcalTotal, onDistributionChange }: DietDistri
     lipPercent: lipP,
     proPercent: proP,
   });
+
+  // Auto mode: sincronizar kcal desde los totales calculados
+  useEffect(() => {
+    if (isAuto && kcalTotal > 0) {
+      setDietKcal(Math.round(kcalTotal));
+    }
+  }, [isAuto, kcalTotal]);
 
   useEffect(() => {
     onDistributionChange({
@@ -39,10 +46,12 @@ const DietDistributionSection = ({ kcalTotal, onDistributionChange }: DietDistri
         <h2 className="font-bold text-lg text-foreground">Distribución de Dieta</h2>
         <button
           onClick={() => setIsAuto(!isAuto)}
-          className="flex items-center gap-1.5 text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity"
+          className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity ${
+            isAuto ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}
         >
           <Sparkles className="w-3 h-3" />
-          Automático
+          {isAuto ? "Auto activo" : "Auto"}
         </button>
       </div>
 

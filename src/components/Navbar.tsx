@@ -1,4 +1,4 @@
-import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn, Shield } from "lucide-react";
+import { Calculator, PieChart, Utensils, BarChart3, ChefHat, LogOut, User, Settings, LogIn, Shield, Moon, Sun } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdmin } from "@/hooks/useAdmin";
 import { useState, useRef, useEffect } from "react";
@@ -26,8 +26,15 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
   const { isAdmin } = useAdmin();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  let navigate: ReturnType<typeof useNavigate> | null = null;
-  try { navigate = useNavigate(); } catch { /* outside router */ }
+  const navigate = useNavigate();
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
+
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle("dark");
+    setIsDark((d) => !d);
+  };
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -43,7 +50,7 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
 
   const handleNavClick = (tab: NavTab, requiresAuth?: boolean) => {
     if (requiresAuth && !user) {
-      navigate?.("/auth");
+      navigate("/auth");
       return;
     }
     onTabChange(tab);
@@ -78,50 +85,62 @@ const Navbar = ({ activeTab, onTabChange }: NavbarProps) => {
           ))}
         </nav>
 
-        {/* User menu or Login button */}
-        {user ? (
-          <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors"
-            >
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-4 h-4 text-primary" />
-              </div>
-              <span className="text-sm font-medium text-foreground hidden sm:inline max-w-[120px] truncate">
-                {displayName}
-              </span>
-            </button>
-
-            {menuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-card shadow-lg py-1 z-50">
-                <div className="px-3 py-2 border-b border-border">
-                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-                </div>
-                <button
-                  onClick={() => { onTabChange("configuracion"); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
-                >
-                  <Settings className="w-4 h-4" /> Configuración
-                </button>
-                <button
-                  onClick={() => { signOut(); setMenuOpen(false); }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" /> Cerrar sesión
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
+        {/* Right side: theme toggle + user menu */}
+        <div className="flex items-center gap-2">
+          {/* Dark mode toggle */}
           <button
-            onClick={() => navigate?.("/auth")}
-            className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            aria-label="Cambiar tema"
           >
-            <LogIn className="w-4 h-4" />
-            Iniciar sesión
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
-        )}
+
+          {/* User menu or Login button */}
+          {user ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 hover:bg-muted transition-colors"
+              >
+                <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="w-4 h-4 text-primary" />
+                </div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline max-w-[120px] truncate">
+                  {displayName}
+                </span>
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-border bg-card shadow-lg py-1 z-50">
+                  <div className="px-3 py-2 border-b border-border">
+                    <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                  </div>
+                  <button
+                    onClick={() => { onTabChange("configuracion"); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    <Settings className="w-4 h-4" /> Configuración
+                  </button>
+                  <button
+                    onClick={() => { signOut(); setMenuOpen(false); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" /> Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => navigate("/auth")}
+              className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+            >
+              <LogIn className="w-4 h-4" />
+              Iniciar sesión
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Mobile nav */}

@@ -1,5 +1,5 @@
 import type { MacroTotals } from "@/data/smaeData";
-import { TrendingDown } from "lucide-react";
+import { Target } from "lucide-react";
 
 interface BottomBarProps {
   totals: MacroTotals;
@@ -27,7 +27,7 @@ const BottomBar = ({ totals, goals }: BottomBarProps) => {
               </span>
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <span>Meta: {item.meta}{item.metaUnit}</span>
-                <TrendingDown className="w-3 h-3" />
+                <Target className="w-3 h-3" />
               </div>
               <span className="text-xs font-bold text-primary">{pct}%</span>
             </div>

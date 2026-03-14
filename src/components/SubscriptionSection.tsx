@@ -273,14 +273,14 @@ const SubscriptionSection = () => {
       </div>
 
       {/* Manage subscription */}
-      {isPaid && isRecurring && (
+      {isPaid && (
         <button
           onClick={handleManageSubscription}
           disabled={loadingPortal}
           className="w-full flex items-center justify-center gap-2 rounded-lg border border-border py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
         >
           {loadingPortal ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
-          Administrar suscripción / Cancelar
+          {isRecurring ? "Administrar suscripción / Cancelar" : "Ver historial de pagos"}
         </button>
       )}
 

@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import type { MacroTotals } from "@/data/smaeData";
 
 interface ResultsSectionProps {
@@ -20,10 +19,6 @@ const ResultsSection = ({ totals, goals }: ResultsSectionProps) => {
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-bold text-lg text-foreground">Resultados</h2>
-        <button className="flex items-center gap-1.5 text-xs font-medium bg-primary text-primary-foreground px-3 py-1.5 rounded-full hover:opacity-90 transition-opacity">
-          <Sparkles className="w-3 h-3" />
-          Automático
-        </button>
       </div>
 
       {/* Table */}
