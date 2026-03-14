@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   ChefHat, Plus, Sparkles, Loader2, Trash2, Eye, UtensilsCrossed,
-  ArrowLeft, Save, Search, Lock, Share2, Link2, Copy,
+  ArrowLeft, Save, Search, Lock, Share2, Link2, Copy, RefreshCw,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,37 +48,13 @@ interface PlatillosSectionProps {
 type PlanType = "gratis" | "estudiante" | "profesional";
 
 const SMAE_GROUP_NAMES: Record<string, string> = {
-  verduras: "Verduras",
-  frutas: "Frutas",
-  cereales_sg: "Cereales S/G",
-  cereales_cg: "Cereales C/G",
-  leguminosas: "Leguminosas",
-  aoa_mbag: "AOA MBAG",
-  aoa_bag: "AOA BAG",
-  aoa_mag: "AOA MAG",
-  aoa_aag: "AOA AAG",
-  leche_des: "Leche Des",
-  leche_semi: "Leche Semi",
-  leche_entera: "Leche Entera",
-  leche_ca: "Leche C/A",
-  aceites_sp: "Aceites S/P",
-  aceites_cp: "Aceites C/P",
-  azucar_sg: "Azúcar S/G",
-  azucar_cg: "Azúcar C/G",
+  verduras: "Verduras", frutas: "Frutas", cereales_sg: "Cereales S/G",
+  cereales_cg: "Cereales C/G", leguminosas: "Leguminosas", aoa_mbag: "AOA MBAG",
+  aoa_bag: "AOA BAG", aoa_mag: "AOA MAG", aoa_aag: "AOA AAG",
+  leche_des: "Leche Des", leche_semi: "Leche Semi", leche_entera: "Leche Entera",
+  leche_ca: "Leche C/A", aceites_sp: "Aceites S/P", aceites_cp: "Aceites C/P",
+  azucar_sg: "Azúcar S/G", azucar_cg: "Azúcar C/G",
 };
-
-const STORAGE_KEY = "supernutrein_platillos";
-
-function loadPlatillos(): Platillo[] {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
-  }
-}
-function savePlatillosLocal(p: Platillo[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
-}
 
 type View = "list" | "create" | "detail";
 
@@ -86,41 +62,68 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
   const { user } = useAuth();
   const { plan, canUseAi, trackAiUsage, limits } = usePlan();
   const [view, setView] = useState<View>("list");
-  const [platillos, setPlatillos] = useState<Platillo[]>(loadPlatillos);
+  const [platillos, setPlatillos] = useState<Platillo[]>([]);
+  const [loadingList, setLoadingList] = useState(true);
   const [search, setSearch] = useState("");
 
-  // Create form state
+  // Form state
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [edicionSmae, setEdicionSmae] = useState("SMAE 4a edición");
   const [analysisResult, setAnalysisResult] = useState<Ingredient[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
-  // Detail view
   const [selectedPlatillo, setSelectedPlatillo] = useState<Platillo | null>(null);
 
-  // Sync with localStorage
-  useEffect(() => {
-    savePlatillosLocal(platillos);
-  }, [platillos]);
+  // ── Load platillos from Supabase ──
+  const fetchPlatillos = useCallback(async () => {
+    if (!user) { setLoadingList(false); return; }
+    setLoadingList(true);
+    try {
+      const { data, error } = await supabase
+        .from("platillos")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
+      if (error) throw error;
+
+      const mapped: Platillo[] = (data || []).map((p) => ({
+        id: p.id,
+        nombre: p.nombre,
+        descripcion: p.descripcion || "",
+        ingredientes: (p.ingredientes as Ingredient[]) || [],
+        desglose_ia: (p.desglose_ia as Ingredient[]) || [],
+        total_kcal: p.total_kcal || 0,
+        total_proteina: p.total_proteina || 0,
+        total_grasas: p.total_grasas || 0,
+        total_carbos: p.total_carbos || 0,
+        edicion_smae: p.edicion_smae || "SMAE 4a edición",
+        es_publico: p.es_publico || false,
+        link_compartir: p.link_compartir,
+        created_at: p.created_at,
+        user_id: p.user_id,
+      }));
+
+      setPlatillos(mapped);
+    } catch (err) {
+      console.error("Error loading platillos:", err);
+      toast.error("Error al cargar platillos");
+    } finally {
+      setLoadingList(false);
+    }
+  }, [user]);
+
+  useEffect(() => { fetchPlatillos(); }, [fetchPlatillos]);
+
+  // ── Analyze with AI ──
   const handleAnalyze = useCallback(async () => {
-    if (!descripcion.trim()) {
-      toast.error("Escribe los ingredientes del platillo");
-      return;
-    }
-    if (!canUseAi) {
-      toast.error("Alcanzaste el límite de análisis IA de tu plan. Actualiza para más.");
-      return;
-    }
+    if (!descripcion.trim()) { toast.error("Escribe los ingredientes del platillo"); return; }
+    if (!canUseAi) { toast.error("Alcanzaste el límite de análisis IA de tu plan."); return; }
     setLoading(true);
     try {
       const tracked = await trackAiUsage();
-      if (!tracked) {
-        toast.error("Límite de análisis IA alcanzado este mes.");
-        return;
-      }
+      if (!tracked) { toast.error("Límite de análisis IA alcanzado este mes."); return; }
       const { data, error } = await supabase.functions.invoke("analyze-dish", {
         body: { text: descripcion.trim() },
       });
@@ -139,11 +142,10 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     }
   }, [descripcion, canUseAi, trackAiUsage]);
 
+  // ── Save platillo to Supabase ──
   const handleSave = useCallback(async () => {
-    if (!nombre.trim()) {
-      toast.error("Escribe el nombre del platillo");
-      return;
-    }
+    if (!user) { toast.error("Inicia sesión para guardar platillos"); return; }
+    if (!nombre.trim()) { toast.error("Escribe el nombre del platillo"); return; }
     if (!editingId && platillos.length >= limits.platillos) {
       toast.error("Alcanzaste el límite de platillos en tu plan actual.");
       return;
@@ -156,104 +158,83 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     const totalRow = analysisResult.find((i) => i.ingrediente === "TOTAL");
     const ingredientRows = analysisResult.filter((i) => i.ingrediente !== "TOTAL");
 
-    const platillo: Platillo = {
-      id: editingId || crypto.randomUUID(),
+    const payload = {
       nombre: nombre.trim(),
       descripcion: descripcion.trim(),
-      ingredientes: ingredientRows,
-      desglose_ia: analysisResult,
+      ingredientes: JSON.parse(JSON.stringify(ingredientRows)),
+      desglose_ia: JSON.parse(JSON.stringify(analysisResult)),
       total_kcal: totalRow?.kcal || ingredientRows.reduce((s, i) => s + i.kcal, 0),
       total_proteina: totalRow?.proteina_g || ingredientRows.reduce((s, i) => s + i.proteina_g, 0),
       total_grasas: totalRow?.grasas_g || ingredientRows.reduce((s, i) => s + i.grasas_g, 0),
       total_carbos: totalRow?.carbos_g || ingredientRows.reduce((s, i) => s + i.carbos_g, 0),
       edicion_smae: edicionSmae,
-      es_publico: false,
-      link_compartir: null,
-      created_at: editingId
-        ? platillos.find((p) => p.id === editingId)?.created_at || new Date().toISOString()
-        : new Date().toISOString(),
+      user_id: user.id,
     };
 
-    // Try to save to Supabase
+    setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const dbPayload = {
-          nombre: platillo.nombre,
-          descripcion: platillo.descripcion,
-          ingredientes: JSON.parse(JSON.stringify(platillo.ingredientes)),
-          desglose_ia: JSON.parse(JSON.stringify(platillo.desglose_ia)),
-          total_kcal: platillo.total_kcal,
-          total_proteina: platillo.total_proteina,
-          total_grasas: platillo.total_grasas,
-          total_carbos: platillo.total_carbos,
-          edicion_smae: platillo.edicion_smae,
-          user_id: user.id,
-        };
-
-        if (editingId) {
-          await supabase.from("platillos").update(dbPayload).eq("id", editingId).eq("user_id", user.id);
-        } else {
-          const { data: inserted } = await supabase.from("platillos").insert(dbPayload).select("id").single();
-          if (inserted) platillo.id = inserted.id;
-        }
-      }
-    } catch {
-      // Fallback to localStorage only
-    }
-
-    const updated = editingId
-      ? platillos.map((p) => (p.id === editingId ? platillo : p))
-      : [...platillos, platillo];
-
-    setPlatillos(updated);
-    toast.success(editingId ? "Platillo actualizado ✅" : "Platillo guardado correctamente ✅");
-    resetForm();
-    setView("list");
-  }, [nombre, descripcion, analysisResult, editingId, platillos, edicionSmae, plan]);
-
-  const handleDelete = useCallback(
-    async (id: string) => {
-      // Try DB delete
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from("platillos").delete().eq("id", id).eq("user_id", user.id);
-        }
-      } catch { /* fallback */ }
-
-      const updated = platillos.filter((p) => p.id !== id);
-      setPlatillos(updated);
-      toast.success("Platillo eliminado");
-      if (selectedPlatillo?.id === id) {
-        setSelectedPlatillo(null);
-        setView("list");
-      }
-    },
-    [platillos, selectedPlatillo]
-  );
-
-  const handleUsarEnDieta = useCallback(
-    (platillo: Platillo) => {
-      const allEquivs: Record<string, number> = {};
-      platillo.ingredientes.forEach((ing) => {
-        if (ing.smae_desglose) {
-          ing.smae_desglose.forEach((s) => {
-            allEquivs[s.id] = (allEquivs[s.id] || 0) + s.equivalents;
-          });
-        }
-      });
-      const equivArray = Object.entries(allEquivs).map(([id, equivalents]) => ({ id, equivalents }));
-      if (equivArray.length > 0) {
-        onUsarEnDieta(equivArray);
-        toast.success("Platillo agregado a tu dieta actual ✅");
+      if (editingId) {
+        const { error } = await supabase
+          .from("platillos")
+          .update(payload)
+          .eq("id", editingId)
+          .eq("user_id", user.id);
+        if (error) throw error;
+        toast.success("Platillo actualizado ✅");
       } else {
-        toast.info("Este platillo no tiene desglose SMAE detallado para agregar.");
+        const { error } = await supabase
+          .from("platillos")
+          .insert(payload);
+        if (error) throw error;
+        toast.success("Platillo guardado correctamente ✅");
       }
-    },
-    [onUsarEnDieta]
-  );
+      await fetchPlatillos();
+      resetForm();
+      setView("list");
+    } catch (err: any) {
+      console.error("Save error:", err);
+      toast.error(err.message || "Error al guardar el platillo");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, nombre, descripcion, analysisResult, editingId, platillos, edicionSmae, limits, fetchPlatillos]);
 
+  // ── Delete ──
+  const handleDelete = useCallback(async (id: string) => {
+    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from("platillos")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setPlatillos((prev) => prev.filter((p) => p.id !== id));
+      toast.success("Platillo eliminado");
+      if (selectedPlatillo?.id === id) { setSelectedPlatillo(null); setView("list"); }
+    } catch (err: any) {
+      toast.error(err.message || "Error al eliminar");
+    }
+  }, [user, selectedPlatillo]);
+
+  // ── Usar en dieta ──
+  const handleUsarEnDieta = useCallback((platillo: Platillo) => {
+    const allEquivs: Record<string, number> = {};
+    platillo.ingredientes.forEach((ing) => {
+      ing.smae_desglose?.forEach((s) => {
+        allEquivs[s.id] = (allEquivs[s.id] || 0) + s.equivalents;
+      });
+    });
+    const equivArray = Object.entries(allEquivs).map(([id, equivalents]) => ({ id, equivalents }));
+    if (equivArray.length > 0) {
+      onUsarEnDieta(equivArray);
+      toast.success("Platillo agregado a tu dieta actual ✅");
+    } else {
+      toast.info("Este platillo no tiene desglose SMAE detallado.");
+    }
+  }, [onUsarEnDieta]);
+
+  // ── Edit ──
   const handleEdit = useCallback((platillo: Platillo) => {
     setNombre(platillo.nombre);
     setDescripcion(platillo.descripcion);
@@ -263,46 +244,35 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     setView("create");
   }, []);
 
+  // ── Share ──
   const handleShare = useCallback(async (platillo: Platillo) => {
+    if (!user) return;
     if (plan !== "profesional") {
       toast.error("La función de compartir está disponible en el plan Profesional.");
       return;
     }
-
     const shareId = platillo.link_compartir || crypto.randomUUID();
-
-    // Try to update in DB
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from("platillos")
-          .update({ es_publico: true, link_compartir: shareId })
-          .eq("id", platillo.id)
-          .eq("user_id", user.id);
-      }
-    } catch { /* fallback */ }
-
-    const updated = platillos.map((p) =>
-      p.id === platillo.id ? { ...p, es_publico: true, link_compartir: shareId } : p
-    );
-    setPlatillos(updated);
-
-    const url = `${window.location.origin}/platillo/${shareId}`;
-    try {
-      await navigator.clipboard.writeText(url);
+      const { error } = await supabase
+        .from("platillos")
+        .update({ es_publico: true, link_compartir: shareId })
+        .eq("id", platillo.id)
+        .eq("user_id", user.id);
+      if (error) throw error;
+      setPlatillos((prev) =>
+        prev.map((p) => p.id === platillo.id ? { ...p, es_publico: true, link_compartir: shareId } : p)
+      );
+      const url = `${window.location.origin}/platillo/${shareId}`;
+      await navigator.clipboard.writeText(url).catch(() => {});
       toast.success("Link copiado al portapapeles ✅");
-    } catch {
-      toast.info(`Link: ${url}`);
+    } catch (err: any) {
+      toast.error(err.message || "Error al compartir");
     }
-  }, [plan, platillos]);
+  }, [user, plan]);
 
   const resetForm = () => {
-    setNombre("");
-    setDescripcion("");
-    setEdicionSmae("SMAE 4a edición");
-    setAnalysisResult(null);
-    setEditingId(null);
+    setNombre(""); setDescripcion(""); setEdicionSmae("SMAE 4a edición");
+    setAnalysisResult(null); setEditingId(null);
   };
 
   const filtered = platillos.filter((p) =>
@@ -325,39 +295,44 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
                 {platillos.length}{platilloLimit < Infinity ? `/${platilloLimit}` : ""}
               </span>
             </div>
-            {atLimit ? (
-              <span className="flex items-center gap-1.5 rounded-lg bg-muted text-muted-foreground font-semibold px-4 py-2 text-sm cursor-not-allowed">
-                <Lock className="w-4 h-4" />
-                Límite alcanzado
-              </span>
-            ) : (
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => { resetForm(); setView("create"); }}
-                className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+                onClick={fetchPlatillos}
+                disabled={loadingList}
+                className="w-8 h-8 flex items-center justify-center rounded-lg border border-input hover:bg-muted transition-colors"
+                aria-label="Recargar platillos"
               >
-                <Plus className="w-4 h-4" />
-                Nuevo platillo
+                <RefreshCw className={`w-3.5 h-3.5 text-muted-foreground ${loadingList ? "animate-spin" : ""}`} />
               </button>
-            )}
+              {atLimit ? (
+                <span className="flex items-center gap-1.5 rounded-lg bg-muted text-muted-foreground font-semibold px-4 py-2 text-sm cursor-not-allowed">
+                  <Lock className="w-4 h-4" /> Límite alcanzado
+                </span>
+              ) : (
+                <button
+                  onClick={() => { resetForm(); setView("create"); }}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary text-primary-foreground font-semibold px-4 py-2 text-sm hover:opacity-90 transition-opacity"
+                >
+                  <Plus className="w-4 h-4" /> Nuevo platillo
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Limit banner */}
           {atLimit && (
             <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 mb-4">
               <Lock className="w-5 h-5 text-primary mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  🔒 Alcanzaste el límite de {platilloLimit} platillo{platilloLimit > 1 ? "s" : ""} en plan{" "}
-                  <span className="capitalize">{plan}</span>.
+                  🔒 Límite de {platilloLimit} platillo{platilloLimit > 1 ? "s" : ""} en plan <span className="capitalize">{plan}</span>.
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Actualiza tu plan para guardar más platillos. Puedes seguir viendo y usando los que ya tienes.
+                  Actualiza tu plan para guardar más platillos.
                 </p>
               </div>
             </div>
           )}
 
-          {/* Search */}
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -369,13 +344,15 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
             />
           </div>
 
-          {filtered.length === 0 ? (
+          {loadingList ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-12">
               <ChefHat className="w-12 h-12 mx-auto text-muted-foreground/40 mb-3" />
               <p className="text-sm text-muted-foreground">
-                {platillos.length === 0
-                  ? "Aún no tienes platillos. ¡Crea tu primero!"
-                  : "No se encontraron platillos."}
+                {platillos.length === 0 ? "Aún no tienes platillos. ¡Crea tu primero!" : "No se encontraron platillos."}
               </p>
             </div>
           ) : (
@@ -394,18 +371,12 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
                     <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold">
                       {Math.round(p.total_kcal)} kcal
                     </span>
-                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                      P: {p.total_proteina.toFixed(1)}g
-                    </span>
-                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                      G: {p.total_grasas.toFixed(1)}g
-                    </span>
-                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full">
-                      C: {p.total_carbos.toFixed(1)}g
-                    </span>
+                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full">P: {p.total_proteina.toFixed(1)}g</span>
+                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full">G: {p.total_grasas.toFixed(1)}g</span>
+                    <span className="bg-muted text-muted-foreground px-2 py-0.5 rounded-full">C: {p.total_carbos.toFixed(1)}g</span>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(p.created_at).toLocaleDateString("es-MX")}
+                    {new Date(p.created_at).toLocaleDateString(navigator.language || "es-MX")}
                   </p>
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     <button
@@ -426,13 +397,10 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
                     >
                       <UtensilsCrossed className="w-3 h-3" /> Usar en dieta
                     </button>
-                    {/* Share button */}
                     <button
                       onClick={() => plan === "profesional" ? handleShare(p) : toast.info("🔒 Compartir disponible en plan Profesional")}
                       className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg border transition-colors ${
-                        plan === "profesional"
-                          ? "border-input hover:bg-muted text-foreground"
-                          : "border-input text-muted-foreground cursor-not-allowed"
+                        plan === "profesional" ? "border-input hover:bg-muted text-foreground" : "border-input text-muted-foreground cursor-not-allowed"
                       }`}
                     >
                       {plan === "profesional" ? <Share2 className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
@@ -459,10 +427,7 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
     return (
       <div className="space-y-5">
         <div className="glass-card p-5">
-          <button
-            onClick={() => setView("list")}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
-          >
+          <button onClick={() => setView("list")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Volver a platillos
           </button>
           <div className="flex items-center justify-between mb-4">
@@ -470,12 +435,10 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
               <h2 className="font-bold text-lg text-foreground">{selectedPlatillo.nombre}</h2>
               <div className="flex items-center gap-2 mt-0.5">
                 <p className="text-xs text-muted-foreground">
-                  Creado: {new Date(selectedPlatillo.created_at).toLocaleDateString("es-MX")}
+                  Creado: {new Date(selectedPlatillo.created_at).toLocaleDateString(navigator.language || "es-MX")}
                 </p>
                 {selectedPlatillo.edicion_smae && (
-                  <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
-                    {selectedPlatillo.edicion_smae}
-                  </span>
+                  <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{selectedPlatillo.edicion_smae}</span>
                 )}
               </div>
             </div>
@@ -483,9 +446,7 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
               <button
                 onClick={() => plan === "profesional" ? handleShare(selectedPlatillo) : toast.info("🔒 Compartir disponible en plan Profesional")}
                 className={`flex items-center gap-1.5 rounded-lg font-semibold px-3 py-2 text-sm transition-opacity ${
-                  plan === "profesional"
-                    ? "border border-input hover:bg-muted text-foreground"
-                    : "border border-input text-muted-foreground cursor-not-allowed"
+                  plan === "profesional" ? "border border-input hover:bg-muted text-foreground" : "border border-input text-muted-foreground cursor-not-allowed"
                 }`}
               >
                 {plan === "profesional" ? <Share2 className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
@@ -500,7 +461,6 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
             </div>
           </div>
 
-          {/* Shared link display */}
           {selectedPlatillo.link_compartir && (
             <div className="flex items-center gap-2 bg-muted/50 rounded-lg p-2 mb-4">
               <Link2 className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -519,7 +479,6 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
             </div>
           )}
 
-          {/* Totals summary */}
           <div className="grid grid-cols-4 gap-2 mb-4">
             {[
               { label: "Kcal", value: Math.round(selectedPlatillo.total_kcal) },
@@ -534,18 +493,13 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
             ))}
           </div>
 
-          {/* Ingredients table */}
           <IngredientTable ingredients={selectedPlatillo.ingredientes} plan={plan} />
-
-          {/* SMAE desglose section */}
           {plan !== "gratis" ? (
             <SmaeDesgloseView ingredients={selectedPlatillo.ingredientes} />
           ) : (
             <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
               <Lock className="w-4 h-4 text-primary shrink-0" />
-              <p className="text-xs text-muted-foreground">
-                🔒 Desglose SMAE por grupo disponible en plan Estudiante o superior.
-              </p>
+              <p className="text-xs text-muted-foreground">🔒 Desglose SMAE por grupo disponible en plan Estudiante o superior.</p>
             </div>
           )}
         </div>
@@ -557,47 +511,30 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
   return (
     <div className="space-y-5">
       <div className="glass-card p-5">
-        <button
-          onClick={() => { resetForm(); setView("list"); }}
-          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
-        >
+        <button onClick={() => { resetForm(); setView("list"); }} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Volver a platillos
         </button>
         <div className="flex items-center gap-2 mb-4">
           <ChefHat className="w-5 h-5 text-primary" />
-          <h2 className="font-bold text-lg text-foreground">
-            {editingId ? "Editar platillo" : "Nuevo platillo"}
-          </h2>
+          <h2 className="font-bold text-lg text-foreground">{editingId ? "Editar platillo" : "Nuevo platillo"}</h2>
         </div>
 
-        {/* Part 1: Basic info */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-foreground mb-1.5 block">
-            Nombre del platillo
-          </label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Nombre del platillo</label>
           <input
-            type="text"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            type="text" value={nombre} onChange={(e) => setNombre(e.target.value)}
             placeholder="Ej: Pechuga con verduras asadas"
             className="w-full rounded-lg border border-input bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
-        {/* SMAE edition selector */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-foreground mb-1.5 block">
-            Edición SMAE
-          </label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Edición SMAE</label>
           <div className="flex gap-2">
             {["SMAE 4a edición", "SMAE 5a edición"].map((ed) => (
-              <button
-                key={ed}
-                onClick={() => setEdicionSmae(ed)}
+              <button key={ed} onClick={() => setEdicionSmae(ed)}
                 className={`flex-1 rounded-lg border py-2 text-sm font-medium transition-colors ${
-                  edicionSmae === ed
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-input bg-background text-foreground hover:bg-muted"
+                  edicionSmae === ed ? "bg-primary text-primary-foreground border-primary" : "border-input bg-background text-foreground hover:bg-muted"
                 }`}
               >
                 {ed}
@@ -606,104 +543,73 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
           </div>
         </div>
 
-        {/* Part 2: Ingredients */}
         <div className="mb-4">
-          <label className="text-sm font-medium text-foreground mb-1.5 block">
-            Ingredientes
-          </label>
+          <label className="text-sm font-medium text-foreground mb-1.5 block">Ingredientes</label>
           <textarea
             className="w-full rounded-lg border border-input bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             rows={4}
-            placeholder="Escribe los ingredientes y cantidades, por ejemplo:&#10;250g de pechuga de pollo, 1 zanahoria mediana, 1 calabaza verde,&#10;1 cucharada de aceite de oliva..."
-            value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
-            disabled={loading}
+            placeholder={"Escribe los ingredientes y cantidades, por ejemplo:\n250g de pechuga de pollo, 1 zanahoria mediana, 1 cucharada de aceite..."}
+            value={descripcion} onChange={(e) => setDescripcion(e.target.value)} disabled={loading}
           />
         </div>
 
         <button
           className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-          onClick={handleAnalyze}
-          disabled={loading}
+          onClick={handleAnalyze} disabled={loading}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {loading ? "Analizando..." : "✨ Analizar con IA"}
         </button>
 
-        {/* Analysis Result */}
         {analysisResult && analysisResult.length > 0 && (
           <div className="mt-5">
             <h3 className="font-semibold text-foreground text-sm mb-3">Desglose nutricional</h3>
-
-            <IngredientTable
-              ingredients={analysisResult.filter((i) => i.ingrediente !== "TOTAL")}
-              plan={plan}
-            />
-
-            {/* Totals row */}
+            <IngredientTable ingredients={analysisResult.filter((i) => i.ingrediente !== "TOTAL")} plan={plan} />
             {(() => {
               const totalRow = analysisResult.find((i) => i.ingrediente === "TOTAL");
-              const ingredientRows = analysisResult.filter((i) => i.ingrediente !== "TOTAL");
-              const kcal = totalRow?.kcal || ingredientRows.reduce((s, i) => s + i.kcal, 0);
-              const pro = totalRow?.proteina_g || ingredientRows.reduce((s, i) => s + i.proteina_g, 0);
-              const gra = totalRow?.grasas_g || ingredientRows.reduce((s, i) => s + i.grasas_g, 0);
-              const car = totalRow?.carbos_g || ingredientRows.reduce((s, i) => s + i.carbos_g, 0);
+              const rows = analysisResult.filter((i) => i.ingrediente !== "TOTAL");
+              const kcal = totalRow?.kcal || rows.reduce((s, i) => s + i.kcal, 0);
+              const pro = totalRow?.proteina_g || rows.reduce((s, i) => s + i.proteina_g, 0);
+              const gra = totalRow?.grasas_g || rows.reduce((s, i) => s + i.grasas_g, 0);
+              const car = totalRow?.carbos_g || rows.reduce((s, i) => s + i.carbos_g, 0);
               return (
-                <div className="grid grid-cols-4 gap-2 mt-3">
-                  {[
-                    { label: "Kcal", value: Math.round(kcal), color: "text-primary" },
-                    { label: "Proteína", value: `${pro.toFixed(1)}g`, color: "text-foreground" },
-                    { label: "Grasas", value: `${gra.toFixed(1)}g`, color: "text-foreground" },
-                    { label: "Carbos", value: `${car.toFixed(1)}g`, color: "text-foreground" },
-                  ].map((item) => (
-                    <div key={item.label} className="text-center rounded-lg bg-primary/10 py-2.5">
-                      <p className="text-xs text-muted-foreground">{item.label}</p>
-                      <p className={`font-bold text-sm ${item.color}`}>{item.value}</p>
+                <>
+                  <div className="grid grid-cols-4 gap-2 mt-3">
+                    {[{ label: "Kcal", value: Math.round(kcal), color: "text-primary" },
+                      { label: "Proteína", value: `${pro.toFixed(1)}g`, color: "text-foreground" },
+                      { label: "Grasas", value: `${gra.toFixed(1)}g`, color: "text-foreground" },
+                      { label: "Carbos", value: `${car.toFixed(1)}g`, color: "text-foreground" }
+                    ].map((item) => (
+                      <div key={item.label} className="text-center rounded-lg bg-primary/10 py-2.5">
+                        <p className="text-xs text-muted-foreground">{item.label}</p>
+                        <p className={`font-bold text-sm ${item.color}`}>{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {kcal > 0 && (
+                    <div className="space-y-2 mt-4">
+                      <MacroBar label="Proteína" percent={((pro * 4) / kcal) * 100} />
+                      <MacroBar label="Grasas" percent={((gra * 9) / kcal) * 100} />
+                      <MacroBar label="Carbohidratos" percent={((car * 4) / kcal) * 100} />
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               );
             })()}
-
-            {/* Macro bars */}
-            {(() => {
-              const totalRow = analysisResult.find((i) => i.ingrediente === "TOTAL");
-              const ingredientRows = analysisResult.filter((i) => i.ingrediente !== "TOTAL");
-              const kcal = totalRow?.kcal || ingredientRows.reduce((s, i) => s + i.kcal, 0);
-              const pro = totalRow?.proteina_g || ingredientRows.reduce((s, i) => s + i.proteina_g, 0);
-              const gra = totalRow?.grasas_g || ingredientRows.reduce((s, i) => s + i.grasas_g, 0);
-              const car = totalRow?.carbos_g || ingredientRows.reduce((s, i) => s + i.carbos_g, 0);
-              if (kcal === 0) return null;
-              const proP = ((pro * 4) / kcal) * 100;
-              const graP = ((gra * 9) / kcal) * 100;
-              const carP = ((car * 4) / kcal) * 100;
-              return (
-                <div className="space-y-2 mt-4">
-                  <MacroBar label="Proteína" percent={proP} />
-                  <MacroBar label="Grasas" percent={graP} />
-                  <MacroBar label="Carbohidratos" percent={carP} />
-                </div>
-              );
-            })()}
-
-            {/* SMAE desglose in create view */}
             {plan !== "gratis" ? (
               <SmaeDesgloseView ingredients={analysisResult.filter((i) => i.ingrediente !== "TOTAL")} />
             ) : (
               <div className="mt-4 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <Lock className="w-4 h-4 text-primary shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                  🔒 Desglose SMAE por grupo disponible en plan Estudiante o superior.
-                </p>
+                <p className="text-xs text-muted-foreground">🔒 Desglose SMAE por grupo disponible en plan Estudiante o superior.</p>
               </div>
             )}
-
             <button
-              onClick={handleSave}
-              className="mt-5 w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold py-2.5 text-sm hover:opacity-90 transition-opacity"
+              onClick={handleSave} disabled={loading}
+              className="mt-5 w-full flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-semibold py-2.5 text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
             >
-              <Save className="w-4 h-4" />
-              💾 Guardar platillo
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {loading ? "Guardando..." : "💾 Guardar platillo"}
             </button>
           </div>
         )}
@@ -713,9 +619,7 @@ const PlatillosSection = ({ onUsarEnDieta }: PlatillosSectionProps) => {
 };
 
 // ── Sub-components ──
-
 function IngredientTable({ ingredients, plan }: { ingredients: Ingredient[]; plan?: PlanType }) {
-  const showSmaeDesglose = plan && plan !== "gratis";
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
@@ -728,11 +632,7 @@ function IngredientTable({ ingredients, plan }: { ingredients: Ingredient[]; pla
             <th className="py-2 px-2 text-center font-semibold text-muted-foreground text-xs uppercase">Grasas</th>
             <th className="py-2 px-2 text-center font-semibold text-muted-foreground text-xs uppercase">Carbos</th>
             <th className="py-2 px-2 text-center font-semibold text-muted-foreground text-xs uppercase">
-              {showSmaeDesglose ? "Equiv. SMAE" : (
-                <span className="flex items-center justify-center gap-1">
-                  Equiv. SMAE {plan === "gratis" && <Lock className="w-3 h-3" />}
-                </span>
-              )}
+              Equiv. SMAE {plan === "gratis" && <Lock className="w-3 h-3 inline" />}
             </th>
           </tr>
         </thead>
@@ -746,11 +646,7 @@ function IngredientTable({ ingredients, plan }: { ingredients: Ingredient[]; pla
               <td className="py-2 px-2 text-center text-xs text-foreground">{ing.grasas_g.toFixed(1)}g</td>
               <td className="py-2 px-2 text-center text-xs text-foreground">{ing.carbos_g.toFixed(1)}g</td>
               <td className="py-2 px-2 text-center text-xs text-accent-foreground font-medium">
-                {plan === "gratis" ? (
-                  <span className="text-muted-foreground">🔒</span>
-                ) : (
-                  ing.equivalente_smae
-                )}
+                {plan === "gratis" ? <span className="text-muted-foreground">🔒</span> : ing.equivalente_smae}
               </td>
             </tr>
           ))}
@@ -763,27 +659,16 @@ function IngredientTable({ ingredients, plan }: { ingredients: Ingredient[]; pla
 function SmaeDesgloseView({ ingredients }: { ingredients: Ingredient[] }) {
   const grouped: Record<string, number> = {};
   ingredients.forEach((ing) => {
-    if (ing.smae_desglose) {
-      ing.smae_desglose.forEach((s) => {
-        grouped[s.id] = (grouped[s.id] || 0) + s.equivalents;
-      });
-    }
+    ing.smae_desglose?.forEach((s) => { grouped[s.id] = (grouped[s.id] || 0) + s.equivalents; });
   });
-
   const entries = Object.entries(grouped).filter(([, v]) => v > 0);
   if (entries.length === 0) return null;
-
   return (
     <div className="mt-4">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-        Equivalentes SMAE por grupo
-      </h4>
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Equivalentes SMAE por grupo</h4>
       <div className="flex flex-wrap gap-2">
         {entries.map(([id, eq]) => (
-          <span
-            key={id}
-            className="bg-accent text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full"
-          >
+          <span key={id} className="bg-accent text-accent-foreground text-xs font-medium px-2.5 py-1 rounded-full">
             {SMAE_GROUP_NAMES[id] || id}: {eq.toFixed(1)}
           </span>
         ))}
