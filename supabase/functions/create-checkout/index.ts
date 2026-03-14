@@ -7,6 +7,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Monthly subscription price IDs
+const SUBSCRIPTION_PRICES = new Set([
+  "price_1TAJYwE2E9LRIgi6Kr6MMa5E", // estudiante monthly
+  "price_1TAJa8E2E9LRIgi6GdkENTYr", // profesional monthly
+]);
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -36,14 +42,16 @@ serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "https://nutri-scribe-sm.lovable.app";
+    const isSubscription = SUBSCRIPTION_PRICES.has(priceId);
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      mode: "subscription",
-      success_url: `${origin}/?checkout=success`,
+      mode: isSubscription ? "subscription" : "payment",
+      success_url: `${origin}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/?checkout=cancel`,
+      metadata: { user_id: user.id },
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
