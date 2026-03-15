@@ -201,7 +201,7 @@ const Auth = () => {
               {mode === "forgot" && "Recuperar contraseña"}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {mode === "login" && "Accede a Super Nutrein"}
+              {mode === "login" && "Accede a Nutrición Fácil"}
               {mode === "register" && "Regístrate para guardar tus datos"}
               {mode === "forgot" && "Te enviaremos un enlace a tu correo"}
             </p>

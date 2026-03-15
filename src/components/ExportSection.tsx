@@ -14,7 +14,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
 
   const generateTextContent = () => {
     const activeGroups = groups.filter((g) => g.equivalents > 0);
-    let content = "SUPER NUTREIN — Dietocálculo SMAE\n";
+    let content = "NUTRICIÓN FÁCIL — Dietocálculo SMAE\n";
     content += "=".repeat(40) + "\n\n";
     content += "EQUIVALENTES POR GRUPO DE ALIMENTOS\n";
     content += "-".repeat(40) + "\n";
@@ -27,7 +27,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
     content += `Proteína: ${Math.round(totals.protein)}g / ${Math.round(goals.protein)}g (${pct(totals.protein, goals.protein)}%)\n`;
     content += `Lípidos:  ${Math.round(totals.lipids)}g / ${Math.round(goals.lipids)}g (${pct(totals.lipids, goals.lipids)}%)\n`;
     content += `HCO:      ${Math.round(totals.hco)}g / ${Math.round(goals.hco)}g (${pct(totals.hco, goals.hco)}%)\n`;
-    content += "\nGenerado por Super Nutrein · " + new Date().toLocaleDateString("es-MX");
+    content += "\nGenerado por Nutrición Fácil · " + new Date().toLocaleDateString("es-MX");
     return content;
   };
 
@@ -48,7 +48,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
     ).join("");
 
     const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-      <title>Dietocálculo SMAE — Super Nutrein</title>
+      <title>Dietocálculo SMAE — Nutrición Fácil</title>
       <style>
         body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; color: #111; }
         h1 { font-size: 20px; color: #0d9488; }
@@ -58,7 +58,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
         td { padding: 7px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
         .meta { font-size: 12px; color: #888; margin-top: 32px; }
       </style></head><body>
-      <h1>Dietocálculo SMAE — Super Nutrein</h1>
+      <h1>Dietocálculo SMAE — Nutrición Fácil</h1>
       <h2>Equivalentes por grupo de alimentos</h2>
       <table><thead><tr><th>Grupo</th><th>Equivalentes</th><th>Kcal</th></tr></thead>
       <tbody>${rows}</tbody></table>
@@ -69,7 +69,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
         <tr><td>Lípidos (g)</td><td>${Math.round(totals.lipids)}</td><td>${Math.round(goals.lipids)}</td><td>${pct(totals.lipids, goals.lipids)}%</td></tr>
         <tr><td>HCO (g)</td><td>${Math.round(totals.hco)}</td><td>${Math.round(goals.hco)}</td><td>${pct(totals.hco, goals.hco)}%</td></tr>
       </tbody></table>
-      <p class="meta">Generado por Super Nutrein · ${new Date().toLocaleDateString("es-MX")}</p>
+      <p class="meta">Generado por Nutrición Fácil · ${new Date().toLocaleDateString("es-MX")}</p>
       </body></html>`;
 
     const win = window.open("", "_blank");
