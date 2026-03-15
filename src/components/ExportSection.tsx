@@ -48,7 +48,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
     ).join("");
 
     const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-      <title>Dietocálculo SMAE — Super Nutrein</title>
+      <title>Dietocálculo SMAE — Nutrición Fácil</title>
       <style>
         body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; color: #111; }
         h1 { font-size: 20px; color: #0d9488; }
