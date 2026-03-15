@@ -58,7 +58,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
         td { padding: 7px 8px; border-bottom: 1px solid #e5e7eb; font-size: 13px; }
         .meta { font-size: 12px; color: #888; margin-top: 32px; }
       </style></head><body>
-      <h1>Dietocálculo SMAE — Super Nutrein</h1>
+      <h1>Dietocálculo SMAE — Nutrición Fácil</h1>
       <h2>Equivalentes por grupo de alimentos</h2>
       <table><thead><tr><th>Grupo</th><th>Equivalentes</th><th>Kcal</th></tr></thead>
       <tbody>${rows}</tbody></table>
