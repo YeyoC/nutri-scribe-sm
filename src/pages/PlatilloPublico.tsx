@@ -165,7 +165,7 @@ const PlatilloPublico = () => {
               to="/"
               className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
             >
-              <ChefHat className="w-4 h-4" /> Crea tus propios platillos en Super Nutrein
+              <ChefHat className="w-4 h-4" /> Crea tus propios platillos en Nutrición Fácil
             </Link>
           </div>
         </div>
