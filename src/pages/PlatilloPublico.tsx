@@ -79,7 +79,7 @@ const PlatilloPublico = () => {
           to="/"
           className="flex items-center gap-1.5 text-sm text-primary hover:underline mt-2"
         >
-          <ArrowLeft className="w-4 h-4" /> Ir a Super Nutrein
+          <ArrowLeft className="w-4 h-4" /> Ir a Nutrición Fácil
         </Link>
       </div>
     );
