@@ -69,7 +69,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
         <tr><td>Lípidos (g)</td><td>${Math.round(totals.lipids)}</td><td>${Math.round(goals.lipids)}</td><td>${pct(totals.lipids, goals.lipids)}%</td></tr>
         <tr><td>HCO (g)</td><td>${Math.round(totals.hco)}</td><td>${Math.round(goals.hco)}</td><td>${pct(totals.hco, goals.hco)}%</td></tr>
       </tbody></table>
-      <p class="meta">Generado por Super Nutrein · ${new Date().toLocaleDateString("es-MX")}</p>
+      <p class="meta">Generado por Nutrición Fácil · ${new Date().toLocaleDateString("es-MX")}</p>
       </body></html>`;
 
     const win = window.open("", "_blank");
