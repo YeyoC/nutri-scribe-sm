@@ -14,7 +14,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
 
   const generateTextContent = () => {
     const activeGroups = groups.filter((g) => g.equivalents > 0);
-    let content = "SUPER NUTREIN — Dietocálculo SMAE\n";
+    let content = "NUTRICIÓN FÁCIL — Dietocálculo SMAE\n";
     content += "=".repeat(40) + "\n\n";
     content += "EQUIVALENTES POR GRUPO DE ALIMENTOS\n";
     content += "-".repeat(40) + "\n";
