@@ -27,7 +27,7 @@ const ExportSection = ({ hasData, groups, totals, goals, onClear }: ExportSectio
     content += `Proteína: ${Math.round(totals.protein)}g / ${Math.round(goals.protein)}g (${pct(totals.protein, goals.protein)}%)\n`;
     content += `Lípidos:  ${Math.round(totals.lipids)}g / ${Math.round(goals.lipids)}g (${pct(totals.lipids, goals.lipids)}%)\n`;
     content += `HCO:      ${Math.round(totals.hco)}g / ${Math.round(goals.hco)}g (${pct(totals.hco, goals.hco)}%)\n`;
-    content += "\nGenerado por Super Nutrein · " + new Date().toLocaleDateString("es-MX");
+    content += "\nGenerado por Nutrición Fácil · " + new Date().toLocaleDateString("es-MX");
     return content;
   };
 
