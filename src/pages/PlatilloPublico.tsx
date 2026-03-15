@@ -91,9 +91,9 @@ const PlatilloPublico = () => {
         <div className="container flex items-center h-14 px-4 gap-3">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-              SN
+              NF
             </div>
-            <span className="font-bold text-lg text-primary hidden sm:inline">Super Nutrein</span>
+            <span className="font-bold text-lg text-primary hidden sm:inline">Nutrición Fácil</span>
           </Link>
           <span className="text-muted-foreground text-sm">/ Platillo compartido</span>
         </div>
