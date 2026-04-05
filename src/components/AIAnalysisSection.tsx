@@ -110,9 +110,15 @@ const AIAnalysisSection = ({ onAnalysis, smaeEdition = "smae4" }: AIAnalysisSect
             className="w-full rounded-lg border border-input bg-background p-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             rows={3}
             maxLength={1000}
-            placeholder="Ejemplo: 550g de pechuga de pollo, 4 huevos, 500ml de leche entera..."
+            placeholder="Ejemplo: 550g de pechuga de pollo, 4 huevos, 500ml de leche entera... (Ctrl+Enter para enviar)"
             value={text}
             onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
             disabled={loading || !canUseAi}
           />
           <div className="flex justify-end">
