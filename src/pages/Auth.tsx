@@ -158,7 +158,7 @@ const Auth = () => {
         <div className="w-full max-w-sm">
           <div className="glass-card p-6 space-y-5">
             <div className="text-center">
-              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg mx-auto mb-3">SN</div>
+              <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg mx-auto mb-3">NF</div>
               <h1 className="text-xl font-bold text-foreground">Verificación en 2 pasos</h1>
               <p className="text-sm text-muted-foreground mt-1">Ingresa el código de tu app autenticadora</p>
             </div>
@@ -194,7 +194,7 @@ const Auth = () => {
       <div className="w-full max-w-sm">
         <div className="glass-card p-6 space-y-5">
           <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg mx-auto mb-3">SN</div>
+            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg mx-auto mb-3">NF</div>
             <h1 className="text-xl font-bold text-foreground">
               {mode === "login" && "Iniciar sesión"}
               {mode === "register" && "Crear cuenta"}
